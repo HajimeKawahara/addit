@@ -103,12 +103,13 @@ def nc3D(x,y,z,xv,yv,zv):
     return fx[:,None,None]*fy[None,:,None]*fz[None,None,:]
 
 @jit
-def inc2D(x,y,xv,yv):
+def inc2D(w,x,y,xv,yv):
     """integrated neighbouring contribution function for 2D (memory reduced sum).
     
     Args:
-        x: x values
-        y: y values
+        w: weight (N)
+        x: x values (N)
+        y: y values (N)
         xv: x grid
         yv: y grid
             
@@ -116,8 +117,8 @@ def inc2D(x,y,xv,yv):
         integrated neighbouring contribution function
         
     Note:
-        This function computes \sum_n fx_n \otimes fy_n, 
-        where fx_n and fy_n are the n-th NCFs for 1D. 
+        This function computes \sum_n w_n fx_n \otimes fy_n, 
+        where w_n is the weight, fx_n and fy_n are the n-th NCFs for 1D. 
         A direct sum uses huge RAM. 
         In this function, we use jax.lax.scan to compute the sum
         
@@ -125,14 +126,18 @@ def inc2D(x,y,xv,yv):
         >>> N=10000
         >>> xv=jnp.linspace(0,1,11) #grid
         >>> yv=jnp.linspace(0,1,11) #grid
+        >>> w=np.random.rand(N)
         >>> x=np.random.rand(N)
         >>> y=np.random.rand(N)
-        >>> val=inc2D(x,y,xv,yv)
-        The direct sum is computed as
-        >>> valdirect=jnp.sum(nc2D(x,y,xv,yv),axis=2)
-        >>> jnp.mean(jnp.sqrt((val/valdirect-1.0)**2))
-        >>> DeviceArray(2.0836995e-07, dtype=float32)
-        
+        >>> val=inc2D(w,x,y,xv,yv)
+        >>> #the comparision with the direct sum
+        >>> valdirect=jnp.sum(nc2D(x,y,xv,yv)*w,axis=2)        
+        >>> #maximum deviation
+        >>> print(jnp.max(jnp.abs((val-valdirect)/jnp.mean(valdirect)))*100,"%") #%
+        >>> 0.018290294 %
+        >>> #mean deviation
+        >>> print(jnp.sqrt(jnp.mean((val-valdirect)**2))/jnp.mean(valdirect)*100,"%") #%
+        >>> 0.0015295201 %
     """
     Ngx=len(xv)
     Ngy=len(yv)
@@ -142,27 +147,29 @@ def inc2D(x,y,xv,yv):
     fx=vcl(indarrx,x,xv) # Ngx x N  memory
     fy=vcl(indarry,y,yv) # Ngy x N memory
     #jnp.sum(fx[:,None]*fy[None,:],axis=2) Ngx x Ngy x N -> huge memory 
-    fxy=jnp.vstack([fx,fy]).T
+    fxy_w=jnp.vstack([fx,fy,w]).T
     
     def fsum(x,arr):
         null=0.0
         fx=arr[0:Ngx]
         fy=arr[Ngx:Ngx+Ngy]
-        val=x+fx[:,None]*fy[None,:]
+        w=arr[Ngx+Ngy]
+        val=x+w*fx[:,None]*fy[None,:]
         return val, null
     
     init0=jnp.zeros((Ngx,Ngy))
-    val,null=scan(fsum,init0,fxy)
+    val,null=scan(fsum,init0,fxy_w)
     return val
 
 @jit
-def inc3D(x,y,z,xv,yv,zv):
+def inc3D(w,x,y,z,xv,yv,zv):
     """integrated neighbouring contribution for 3D (memory reduced sum).
     
     Args:
-        x: x values
-        y: y values
-        z: z values
+        w: weight (N)
+        x: x values (N)
+        y: y values (N)
+        z: z values (N)
         xv: x grid
         yv: y grid
         zv: z grid            
@@ -171,8 +178,8 @@ def inc3D(x,y,z,xv,yv,zv):
         integrated neighbouring contribution 
         
     Note:
-        This function computes \sum_n fx_n \otimes fy_n \otimes fz_n, 
-        where fx_n, fy_n, and fz_n are the n-th NCFs for 1D. 
+        This function computes \sum_n w_n fx_n \otimes fy_n \otimes fz_n, 
+        where w_n is the weight, fx_n, fy_n, and fz_n are the n-th NCFs for 1D. 
         A direct sum uses huge RAM. 
         In this function, we use jax.lax.scan to compute the sum
         
@@ -181,15 +188,19 @@ def inc3D(x,y,z,xv,yv,zv):
         >>> xv=jnp.linspace(0,1,11) #grid
         >>> yv=jnp.linspace(0,1,11) #grid
         >>> zv=jnp.linspace(0,1,11) #grid
+        >>> w=np.random.rand(N)
         >>> x=np.random.rand(N)
         >>> y=np.random.rand(N)
         >>> z=np.random.rand(N)
-        >>> val=inc3D(x,y,z,xv,yv,zv)
-        The direct sum is computed as
-        >>> valdirect=jnp.sum(nc3D(x,y,z,xv,yv,zv),axis=3) # direct sum (lots memory)
-        >>> jnp.mean(jnp.sqrt((val/valdirect-1.0)**2))
-        >>> DeviceArray(9.686315e-08, dtype=float32)
-        
+        >>> val=inc3D(w,x,y,z,xv,yv,zv)
+        >>> #the comparision with the direct sum
+        >>> valdirect=jnp.sum(nc3D(x,y,z,xv,yv,zv)*w,axis=3)
+        >>> #maximum deviation
+        >>> print(jnp.max(jnp.abs((val-valdirect)/jnp.mean(valdirect)))*100,"%") #%
+        >>> 0.26853472 %
+        >>> #mean deviation
+        >>> print(jnp.sqrt(jnp.mean((val-valdirect)**2))/jnp.mean(valdirect)*100,"%") #%
+        >>> 0.0054464266 %
     """
     Ngx=len(xv)
     Ngy=len(yv)
@@ -203,16 +214,17 @@ def inc3D(x,y,z,xv,yv,zv):
     fy=vcl(indarry,y,yv) # Ngy x N memory
     fz=vcl(indarrz,z,zv) # Ngz x N memory
 
-    fxyz=jnp.vstack([fx,fy,fz]).T
+    fxyz_w=jnp.vstack([fx,fy,fz,w]).T
     def fsum(x,arr):
         null=0.0
         fx=arr[0:Ngx]
         fy=arr[Ngx:Ngx+Ngy]
         fz=arr[Ngx+Ngy:Ngx+Ngy+Ngz]
-        val=x+fx[:,None,None]*fy[None,:,None]*fz[None,None,:]
+        w=arr[Ngx+Ngy+Ngz]
+        val=x+w*fx[:,None,None]*fy[None,:,None]*fz[None,None,:]
         return val, null
     
     init0=jnp.zeros((Ngx,Ngy,Ngz))
-    val,null=scan(fsum,init0,fxyz)
+    val,null=scan(fsum,init0,fxyz_w)
     return val
     
