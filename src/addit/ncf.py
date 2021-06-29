@@ -122,7 +122,7 @@ def inc2D(x,y,xv,yv):
         In this function, we use jax.lax.scan to compute the sum
         
     Example:
-        >>>N=10000
+        >>> N=10000
         >>> xv=jnp.linspace(0,1,11) #grid
         >>> yv=jnp.linspace(0,1,11) #grid
         >>> x=np.random.rand(N)
@@ -142,12 +142,12 @@ def inc2D(x,y,xv,yv):
     fx=vcl(indarrx,x,xv) # Ngx x N  memory
     fy=vcl(indarry,y,yv) # Ngy x N memory
     #jnp.sum(fx[:,None]*fy[None,:],axis=2) Ngx x Ngy x N -> huge memory 
+    fxy=jnp.vstack([fx,fy]).T
     
-    fxy=jnp.array([fx,fy]).T
     def fsum(x,arr):
         null=0.0
-        fx=arr[:,0]
-        fy=arr[:,1]
+        fx=arr[0:Ngx]
+        fy=arr[Ngx:Ngx+Ngy]
         val=x+fx[:,None]*fy[None,:]
         return val, null
     
@@ -177,7 +177,7 @@ def inc3D(x,y,z,xv,yv,zv):
         In this function, we use jax.lax.scan to compute the sum
         
     Example:
-        >>>N=10000
+        >>> N=10000
         >>> xv=jnp.linspace(0,1,11) #grid
         >>> yv=jnp.linspace(0,1,11) #grid
         >>> zv=jnp.linspace(0,1,11) #grid
@@ -202,13 +202,13 @@ def inc3D(x,y,z,xv,yv,zv):
     fx=vcl(indarrx,x,xv) # Ngx x N  memory
     fy=vcl(indarry,y,yv) # Ngy x N memory
     fz=vcl(indarrz,z,zv) # Ngz x N memory
-    fxyz=jnp.array([fx,fy,fz]).T
-    
+
+    fxyz=jnp.vstack([fx,fy,fz]).T
     def fsum(x,arr):
         null=0.0
-        fx=arr[:,0]
-        fy=arr[:,1]
-        fz=arr[:,2]
+        fx=arr[0:Ngx]
+        fy=arr[Ngx:Ngx+Ngy]
+        fz=arr[Ngx+Ngy:Ngx+Ngy+Ngz]
         val=x+fx[:,None,None]*fy[None,:,None]*fz[None,None,:]
         return val, null
     
