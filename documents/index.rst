@@ -6,7 +6,12 @@
 ADDIT
 ==================================
 
-`addit <https://github.com/HajimeKawahara/addit>`_ provides an auto-differentiable DIT.
+`addit <https://github.com/HajimeKawahara/addit>`_ provides an auto-differentiable `DIT <https://www.sciencedirect.com/science/article/abs/pii/S0022407320310049>`_.
+
+.. toctree::
+   :maxdepth: 1
+	      
+   tutorials/cs.rst
 
    
 .. toctree::

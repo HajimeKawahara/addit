@@ -4,6 +4,14 @@ addit package
 Submodules
 ----------
 
+addit.dit module
+----------------
+
+.. automodule:: addit.dit
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 addit.interpolate module
 ------------------------
 
