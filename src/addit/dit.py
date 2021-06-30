@@ -42,20 +42,20 @@ def rundit(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid):
     Ng_nu=len(nu_grid)
     Ng_beta=len(beta_grid)
     Ng_gammaL=len(gammaL_grid)
-    dnu = (nu_grid[-1]-nu_grid[0])/(Ng_nu-1)
-    log_beta_grid = jnp.log(beta_grid)
-    log_gammaL_grid = jnp.log(gammaL_grid)
     
     log_beta=jnp.log(beta)
     log_gammaL=jnp.log(gammaL)
-        
+    
+    log_beta_grid = jnp.log(beta_grid)
+    log_gammaL_grid = jnp.log(gammaL_grid)
+    
+    dnu = (nu_grid[-1]-nu_grid[0])/(Ng_nu-1)
     k = jnp.fft.rfftfreq(2*Ng_nu,dnu)
     val=inc3D(S,nu_lines,log_beta,log_gammaL,nu_grid,log_beta_grid,log_gammaL_grid)
     valbuf=jnp.vstack([val,jnp.zeros_like(val)])
     fftval = jnp.fft.rfft(valbuf,axis=0)
-    fftvalsum = jnp.sum(fftval,axis=(1,2))
     vk=voigt_kernel(k, beta_grid,gammaL_grid)
-    vkmean=jnp.mean(vk,axis=(1,2))
-    #F0=jnp.fft.irfft(fftvalsum)[:Ng_nu] #no kernel applied
-    F0=jnp.fft.irfft(fftvalsum*vkmean)[:Ng_nu]
+    fftvalsum = jnp.sum(fftval*vk,axis=(1,2))
+    #F0=jnp.fft.irfft(fftvalsum)[:Ng_nu]
+    F0=jnp.fft.irfft(fftvalsum)[:Ng_nu]/dnu
     return F0
