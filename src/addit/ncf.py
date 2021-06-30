@@ -125,8 +125,8 @@ def inc2D(w,x,y,xv,yv):
     Example:
         >>> N=10000
         >>> xv=jnp.linspace(0,1,11) #grid
-        >>> yv=jnp.linspace(0,1,11) #grid
-        >>> w=np.random.rand(N)
+        >>> yv=jnp.linspace(0,1,13) #grid
+        >>> w=np.logspace(1.0,3.0,N)
         >>> x=np.random.rand(N)
         >>> y=np.random.rand(N)
         >>> val=inc2D(w,x,y,xv,yv)
@@ -134,10 +134,10 @@ def inc2D(w,x,y,xv,yv):
         >>> valdirect=jnp.sum(nc2D(x,y,xv,yv)*w,axis=2)        
         >>> #maximum deviation
         >>> print(jnp.max(jnp.abs((val-valdirect)/jnp.mean(valdirect)))*100,"%") #%
-        >>> 0.018290294 %
+        >>> 5.196106e-05 %
         >>> #mean deviation
         >>> print(jnp.sqrt(jnp.mean((val-valdirect)**2))/jnp.mean(valdirect)*100,"%") #%
-        >>> 0.0015295201 %
+        >>> 1.6135311e-05 %
     """
     Ngx=len(xv)
     Ngy=len(yv)
@@ -186,9 +186,9 @@ def inc3D(w,x,y,z,xv,yv,zv):
     Example:
         >>> N=10000
         >>> xv=jnp.linspace(0,1,11) #grid
-        >>> yv=jnp.linspace(0,1,11) #grid
-        >>> zv=jnp.linspace(0,1,11) #grid
-        >>> w=np.random.rand(N)
+        >>> yv=jnp.linspace(0,1,13) #grid
+        >>> zv=jnp.linspace(0,1,17) #grid
+        >>> w=np.logspace(1.0,3.0,N)
         >>> x=np.random.rand(N)
         >>> y=np.random.rand(N)
         >>> z=np.random.rand(N)
@@ -197,10 +197,10 @@ def inc3D(w,x,y,z,xv,yv,zv):
         >>> valdirect=jnp.sum(nc3D(x,y,z,xv,yv,zv)*w,axis=3)
         >>> #maximum deviation
         >>> print(jnp.max(jnp.abs((val-valdirect)/jnp.mean(valdirect)))*100,"%") #%
-        >>> 0.26853472 %
+        >>> 5.520862e-05 %
         >>> #mean deviation
         >>> print(jnp.sqrt(jnp.mean((val-valdirect)**2))/jnp.mean(valdirect)*100,"%") #%
-        >>> 0.0054464266 %
+        >>> 8.418057e-06 %
     """
     Ngx=len(xv)
     Ngy=len(yv)
