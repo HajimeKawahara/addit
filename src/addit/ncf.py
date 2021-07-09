@@ -12,7 +12,7 @@ from jax import vmap
 from jax.lax import scan
 
 @jit
-def conti(i,x,xv):
+def Xncf(i,x,xv):
     """neighbouring contribution function for index i.  
     
     Args:
@@ -50,7 +50,7 @@ def nc1D(x,xv):
 
     """
     indarr=jnp.arange(len(xv))
-    vcl=vmap(conti,(0,None,None),0)
+    vcl=vmap(Xncf,(0,None,None),0)
     return vcl(indarr,x,xv)
 
 def nc2D(x,y,xv,yv):
@@ -68,7 +68,7 @@ def nc2D(x,y,xv,yv):
     """
     indarrx=jnp.arange(len(xv))
     indarry=jnp.arange(len(yv))
-    vcl=vmap(conti,(0,None,None),0)
+    vcl=vmap(Xncf,(0,None,None),0)
     fx=vcl(indarrx,x,xv)
     fy=vcl(indarry,y,yv)
     return fx[:,None]*fy[None,:]
@@ -95,7 +95,7 @@ def nc3D(x,y,z,xv,yv,zv):
     indarry=jnp.arange(len(yv))
     indarrz=jnp.arange(len(zv))
 
-    vcl=vmap(conti,(0,None,None),0)
+    vcl=vmap(Xncf,(0,None,None),0)
     fx=vcl(indarrx,x,xv)
     fy=vcl(indarry,y,yv)
     fz=vcl(indarrz,z,zv)
@@ -143,7 +143,7 @@ def inc2D(w,x,y,xv,yv):
     Ngy=len(yv)
     indarrx=jnp.arange(Ngx)
     indarry=jnp.arange(Ngy)
-    vcl=vmap(conti,(0,None,None),0)
+    vcl=vmap(Xncf,(0,None,None),0)
     fx=vcl(indarrx,x,xv) # Ngx x N  memory
     fy=vcl(indarry,y,yv) # Ngy x N memory
     #jnp.sum(fx[:,None]*fy[None,:],axis=2) Ngx x Ngy x N -> huge memory 
@@ -163,7 +163,7 @@ def inc2D(w,x,y,xv,yv):
 
 @jit
 def inc3D(w,x,y,z,xv,yv,zv):
-    """integrated neighbouring contribution for 3D (memory reduced sum).
+    """The lineshape distribution matrix = integrated neighbouring contribution for 3D (memory reduced sum).
     
     Args:
         w: weight (N)
@@ -175,7 +175,7 @@ def inc3D(w,x,y,z,xv,yv,zv):
         zv: z grid            
         
     Returns:
-        integrated neighbouring contribution 
+        lineshape distribution matrix (integrated neighbouring contribution for 3D)
         
     Note:
         This function computes \sum_n w_n fx_n \otimes fy_n \otimes fz_n, 
@@ -209,7 +209,7 @@ def inc3D(w,x,y,z,xv,yv,zv):
     indarry=jnp.arange(Ngy)
     indarrz=jnp.arange(Ngz)
     
-    vcl=vmap(conti,(0,None,None),0)
+    vcl=vmap(Xncf,(0,None,None),0)
     fx=vcl(indarrx,x,xv) # Ngx x N  memory
     fy=vcl(indarry,y,yv) # Ngy x N memory
     fz=vcl(indarrz,z,zv) # Ngz x N memory
