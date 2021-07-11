@@ -24,27 +24,6 @@ def voigt_kernel(k, beta,gammaL):
     return jnp.exp(-2.0*val)
 
 
-def folded_voigt_kernel(k, beta,gammaL):
-    """Fourier Kernel of the Voigt Profile
-    
-    Args:
-        k: conjugated of wavenumber
-        beta: Gaussian standard deviation
-        gammaL: Lorentian Half Width
-        
-    Returns:
-        kernel (N_x,N_beta,N_gammaL)
-    
-    Note:
-        Conversions to the (full) width, wG and wL are as follows: 
-        wG=2*sqrt(2*ln2) beta
-        wL=2*gamma
-    
-    """
-    val=(jnp.pi*beta[None,:,None]*k[:,None,None])**2 + jnp.pi*gammaL[None,None,:]*k[:,None,None]
-    return jnp.exp(-2.0*val)
-
-
 @jit
 def rundit(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid):
     """run DIT
