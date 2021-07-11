@@ -110,7 +110,6 @@ def folded_voigt_kernel(k,beta,gammaL,Nfold,dnu):
         null=0.0
         return val, null
     
-    print(jnp.max(k),1.0/dnu)
     val=jnp.exp(-2.0*((jnp.pi*beta[None,:,None]*k[:,None,None])**2 + jnp.pi*gammaL[None,None,:]*k[:,None,None]))
     dLarray=jnp.linspace(1,Nfold,Nfold)/dnu
     
@@ -118,7 +117,7 @@ def folded_voigt_kernel(k,beta,gammaL,Nfold,dnu):
     
     return val
     
-
+@jit
 def runditfold(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid,Nfold):
     """run DIT folded voigt
 
@@ -157,6 +156,7 @@ def runditfold(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid,Nfold):
     xs=jnp.fft.irfft(fftvalsum)[:Ng_nu]/dnu
     return xs
 
+@jit
 def f1_voigt_kernel(k,beta,gammaL,dnu):
     """Folded Fourier Kernel of the Voigt Profile for Nfold=1 (not using scan)
   
