@@ -37,7 +37,7 @@ def folded_voigt_kernel_log(k,log_nbeta,log_ngammaL,dLarray):
     
     val=jnp.exp(-2.0*((jnp.pi*beta[None,:,None]*k[:,None,None])**2 + jnp.pi*gammaL[None,None,:]*k[:,None,None]))
     
-#    val,nullstack=scan(ffold, val, dLarray)
+    val,nullstack=scan(ffold, val, dLarray)
     
     return val
 
