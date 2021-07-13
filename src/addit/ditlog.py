@@ -11,7 +11,7 @@ def folded_voigt_kernel_log(k,log_nbeta,log_ngammaL,dLarray):
         k: conjugate wavenumber
         beta: Gaussian standard deviation
         gammaL: Lorentian Half Width
-        dLarray:
+        dLarray: dLarray
         
     Returns:
         kernel (N_x,N_beta,N_gammaL)
@@ -44,7 +44,7 @@ def folded_voigt_kernel_log(k,log_nbeta,log_ngammaL,dLarray):
 
 
 @jit
-def rundit_fold_log(S,nu_lines,beta,gammaL,nu_grid,R,nbeta_grid,ngammaL_grid,Nfold, dLarray):
+def rundit_fold_log(S,nu_lines,beta,gammaL,nu_grid,R,nbeta_grid,ngammaL_grid,dLarray):
     """run DIT folded voigt for an arbitrary ESLOG
 
     Args:
@@ -56,11 +56,11 @@ def rundit_fold_log(S,nu_lines,beta,gammaL,nu_grid,R,nbeta_grid,ngammaL_grid,Nfo
        R: spectral resolution
        nbeta_grid: normalized beta grid 
        ngammaL_grid: normalized gammaL grid
-       Nfold: # of folding
+       dLarray: dLarray
 
     Returns:
        Cross section
-@
+
     
     """
     Ng_nu=len(nu_grid)
