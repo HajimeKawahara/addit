@@ -11,7 +11,7 @@ def folded_voigt_kernel_log(k,log_nbeta,log_ngammaL,dLarray):
         k: conjugate wavenumber
         beta: Gaussian standard deviation
         gammaL: Lorentian Half Width
-        dLarray:
+        dLarray: dLarray
         
     Returns:
         kernel (N_x,N_beta,N_gammaL)
@@ -37,14 +37,14 @@ def folded_voigt_kernel_log(k,log_nbeta,log_ngammaL,dLarray):
     
     val=jnp.exp(-2.0*((jnp.pi*beta[None,:,None]*k[:,None,None])**2 + jnp.pi*gammaL[None,None,:]*k[:,None,None]))
     
-#    val,nullstack=scan(ffold, val, dLarray)
+    val,nullstack=scan(ffold, val, dLarray)
     
     return val
 
 
 
-#@jit
-def rundit_fold_log(S,nu_lines,beta,gammaL,nu_grid,R,nbeta_grid,ngammaL_grid,Nfold, dLarray):
+@jit
+def rundit_fold_log(S,nu_lines,beta,gammaL,nu_grid,R,nbeta_grid,ngammaL_grid,dLarray):
     """run DIT folded voigt for an arbitrary ESLOG
 
     Args:
@@ -56,11 +56,11 @@ def rundit_fold_log(S,nu_lines,beta,gammaL,nu_grid,R,nbeta_grid,ngammaL_grid,Nfo
        R: spectral resolution
        nbeta_grid: normalized beta grid 
        ngammaL_grid: normalized gammaL grid
-       Nfold: # of folding
+       dLarray: dLarray
 
     Returns:
        Cross section
-@
+
     
     """
     Ng_nu=len(nu_grid)
@@ -75,12 +75,6 @@ def rundit_fold_log(S,nu_lines,beta,gammaL,nu_grid,R,nbeta_grid,ngammaL_grid,Nfo
     
     log_nbeta_grid = jnp.log(nbeta_grid)
     log_ngammaL_grid = jnp.log(ngammaL_grid)
-
-    print(jnp.min(log_nbeta),jnp.max(log_nbeta))
-    print(log_nbeta_grid)
-
-    print(jnp.min(log_ngammaL),jnp.max(log_ngammaL))
-    print(log_ngammaL_grid)
 
     k = jnp.fft.rfftfreq(2*Ng_nu,1)
     val=inc3D(S,nu_lines,log_nbeta,log_ngammaL,nu_grid,log_nbeta_grid,log_ngammaL_grid)
