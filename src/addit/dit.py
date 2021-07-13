@@ -3,6 +3,21 @@ from jax import jit
 from addit.ncf import inc3D
 from jax.lax import scan
 
+def make_dLarray(Nfold,dnu):
+    """compute dLarray for the DIT folding
+    
+    Args:
+       Nfold: # of the folding
+       dnu: linear wavenumber grid interval
+
+    Returns:
+       dLarray: ifold/dnu (ifold=1,..,Nfold) array
+
+    """
+    dLarray=jnp.linspace(1,Nfold,Nfold)/dnu                
+    return dLarray
+
+
 def voigt_kernel(k, beta,gammaL):
     """Fourier Kernel of the Voigt Profile
     
@@ -61,7 +76,8 @@ def rundit(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid):
     xs=jnp.fft.irfft(fftvalsum)[:Ng_nu]/dnu
     return xs
 
-def folded_voigt_kernel(k,beta,gammaL,Nfold,dnu):
+@jit
+def folded_voigt_kernel(k,beta,gammaL,Nfold,dnu, dLarray):
     """Folded Fourier Kernel of the Voigt Profile
     
     Args:
@@ -70,7 +86,8 @@ def folded_voigt_kernel(k,beta,gammaL,Nfold,dnu):
         gammaL: Lorentian Half Width
         Nfold: Folding number
         dnu: linear waveunmber grid size
-        
+        dLarray: dLarray
+
     Returns:
         kernel (N_x,N_beta,N_gammaL)
     
@@ -90,14 +107,13 @@ def folded_voigt_kernel(k,beta,gammaL,Nfold,dnu):
         return val, null
     
     val=jnp.exp(-2.0*((jnp.pi*beta[None,:,None]*k[:,None,None])**2 + jnp.pi*gammaL[None,None,:]*k[:,None,None]))
-    dLarray=jnp.linspace(1,Nfold,Nfold)/dnu
     
     val,nullstack=scan(ffold, val, dLarray)
     
     return val
     
 @jit
-def runditfold(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid,Nfold):
+def runditfold(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid,Nfold,dLarray):
     """run DIT folded voigt
 
     Args:
@@ -109,6 +125,7 @@ def runditfold(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid,Nfold):
        beta_grid: beta grid
        gammaL_grid: gammaL grid
        Nfold: # of folding
+       dLarray: dLarray
 
     Returns:
        Cross section
@@ -130,7 +147,7 @@ def runditfold(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid,Nfold):
     val=inc3D(S,nu_lines,log_beta,log_gammaL,nu_grid,log_beta_grid,log_gammaL_grid)
     valbuf=jnp.vstack([val,jnp.zeros_like(val)])
     fftval = jnp.fft.rfft(valbuf,axis=0)
-    vk=folded_voigt_kernel(k, beta_grid,gammaL_grid, Nfold, dnu)
+    vk=folded_voigt_kernel(k, beta_grid,gammaL_grid, Nfold, dnu, dLarray)
     fftvalsum = jnp.sum(fftval*vk,axis=(1,2))
     xs=jnp.fft.irfft(fftvalsum)[:Ng_nu]/dnu
     return xs
