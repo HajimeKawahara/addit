@@ -43,7 +43,7 @@ def folded_voigt_kernel_log(k,log_nbeta,log_ngammaL,dLarray):
 
 
 
-#@jit
+@jit
 def rundit_fold_log(S,nu_lines,beta,gammaL,nu_grid,R,nbeta_grid,ngammaL_grid,Nfold, dLarray):
     """run DIT folded voigt for an arbitrary ESLOG
 
@@ -75,12 +75,6 @@ def rundit_fold_log(S,nu_lines,beta,gammaL,nu_grid,R,nbeta_grid,ngammaL_grid,Nfo
     
     log_nbeta_grid = jnp.log(nbeta_grid)
     log_ngammaL_grid = jnp.log(ngammaL_grid)
-
-    print(jnp.min(log_nbeta),jnp.max(log_nbeta))
-    print(log_nbeta_grid)
-
-    print(jnp.min(log_ngammaL),jnp.max(log_ngammaL))
-    print(log_ngammaL_grid)
 
     k = jnp.fft.rfftfreq(2*Ng_nu,1)
     val=inc3D(S,nu_lines,log_nbeta,log_ngammaL,nu_grid,log_nbeta_grid,log_ngammaL_grid)

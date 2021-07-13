@@ -7,9 +7,9 @@ np.random.seed(20)
 
 N=2000
 #Ng_nu=20000
-Ng_nu=30000
-Ng_beta=20
-Ng_gammaL=20
+Ng_nu=20000
+Ng_beta=30
+Ng_gammaL=30
 
 #nus=np.linspace(2050.0,2150.0,Ng_nu) #nu grid
 nu0=2050.0
