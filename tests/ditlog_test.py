@@ -1,5 +1,5 @@
 from addit.dit import rundit, runditfold, runditf1, make_dLarray
-from addit.ditlog import rundit_fold_log,  rundit_fold_logdv
+from addit.ditlog import rundit_fold_log,  rundit_fold_logred
 import jax.numpy as jnp
 import numpy as np
 from addit.ncf import inc3D
@@ -33,9 +33,7 @@ S=np.logspace(0.0,3.0,N)
 S[0:20]=1.e5
 beta[0:20]=0.01
 gammaL[0:20]=0.01
-
 nu_lines=np.random.rand(N)*(nus[-1]-nus[0]-50.0)+nus[0]+25.0
-
 
 nbeta_grid=np.logspace(np.log10(np.min(beta/nu_lines*R)),np.log10(np.max(beta/nu_lines*R)),Ng_beta) 
 ngammaL_grid=np.logspace(np.log10(np.min(gammaL/nu_lines*R)),np.log10(np.max(gammaL/nu_lines*R)),Ng_gammaL)
@@ -57,12 +55,11 @@ F0f2=rundit_fold_log(S,nu_lines,beta,gammaL,nus,R,nbeta_grid,ngammaL_grid,dLarra
 #care for truncation
 dvx=nu_lines/R
 dv=nus/R
-F0f2_=rundit_fold_logdv(S,nu_lines-nn,beta,gammaL,nus-nn,R,nbeta_grid_,ngammaL_grid_,dLarray,dvx,dv)
-print(F0f2_)
+F0f2_=rundit_fold_logred(S,nu_lines-nn,beta,gammaL,nus-nn,nbeta_grid_,ngammaL_grid_,dLarray,dvx,dv)
 
+#direct voigt for comparison
 import matplotlib.pyplot as plt
 from exojax.spec import xsection
-#direct
 xsv=xsection(nus,nu_lines,beta,gammaL,S)
 
 fig=plt.figure()
@@ -70,13 +67,14 @@ ax=fig.add_subplot(211)
 plt.plot(nus,xsv,label="direct")
 plt.plot(nus,F0f2,label="DIT (Nfold="+str(Nfold)+")",ls="dashed")
 plt.plot(nus,F0f2-xsv,label="DIT-direct")
-plt.plot(nus,F0f2_-xsv,label="DIT-direct (imp)")
+plt.plot(nus,F0f2_-xsv,label="DIT-direct (reduced $\nu$)")
 #plt.xlim(2113.2,2113.5)
 
 plt.legend()
 ax=fig.add_subplot(212)
-plt.plot(nus,F0f2-xsv,label="DIT-log",alpha=0.3)
-plt.plot(nus,F0f2_-xsv,label="DIT-log (imp)",alpha=0.3)
+plt.plot(nus,(F0f2-xsv),label="DIT/log",alpha=0.3)
+plt.plot(nus,(F0f2_-xsv),label="DIT/log (reduced $\nu$)",alpha=0.3)
+plt.ylabel("difference")
 #plt.xlim(2113.2,2113.5)
 plt.legend()
 plt.show()

@@ -41,8 +41,6 @@ def folded_voigt_kernel_log(k,log_nbeta,log_ngammaL,dLarray):
     
     return val
 
-
-
 @jit
 def rundit_fold_log(S,nu_lines,beta,gammaL,nu_grid,R,nbeta_grid,ngammaL_grid,dLarray):
     """run DIT folded voigt for an arbitrary ESLOG
@@ -61,7 +59,6 @@ def rundit_fold_log(S,nu_lines,beta,gammaL,nu_grid,R,nbeta_grid,ngammaL_grid,dLa
     Returns:
        Cross section
 
-    
     """
 
 
@@ -91,9 +88,9 @@ def rundit_fold_log(S,nu_lines,beta,gammaL,nu_grid,R,nbeta_grid,ngammaL_grid,dLa
 
     return xs
 
-#@jit
-def rundit_fold_logdv(S,nu_lines,beta,gammaL,nu_grid,nbeta_grid,ngammaL_grid,dLarray,dv_lines,dv_grid):
-    """run DIT folded voigt for an arbitrary ESLOG 
+@jit
+def rundit_fold_logred(S,nu_lines,beta,gammaL,nu_grid,nbeta_grid,ngammaL_grid,dLarray,dv_lines,dv_grid):
+    """run DIT folded voigt for ESLOG for reduced wavenumebr inputs (against the truncation error)
 
     Args:
        S: line strength (Nlines)
@@ -104,8 +101,8 @@ def rundit_fold_logdv(S,nu_lines,beta,gammaL,nu_grid,nbeta_grid,ngammaL_grid,dLa
        nbeta_grid: normalized beta grid 
        ngammaL_grid: normalized gammaL grid
        dLarray: dLarray
-       dv_lines: 
-       dv_grid:
+       dv_lines: delta wavenumber for lines i.e. nu_lines/R
+       dv_grid: delta wavenumber for nu_grid i.e. nu_grid/R
 
     Returns:
        Cross section
@@ -133,6 +130,6 @@ def rundit_fold_logdv(S,nu_lines,beta,gammaL,nu_grid,nbeta_grid,ngammaL_grid,dLa
     fftval = jnp.fft.rfft(valbuf,axis=0)
     vk=folded_voigt_kernel_log(k, log_nbeta_grid,log_ngammaL_grid,dLarray)
     fftvalsum = jnp.sum(fftval*vk,axis=(1,2))
-    xs=jnp.fft.irfft(fftvalsum)[:Ng_nu]/dvgrid
+    xs=jnp.fft.irfft(fftvalsum)[:Ng_nu]/dv_grid
     
     return xs
