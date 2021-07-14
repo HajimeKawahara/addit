@@ -9,8 +9,8 @@ def folded_voigt_kernel_log(k,log_nbeta,log_ngammaL,dLarray):
     
     Args:
         k: conjugate wavenumber
-        beta: Gaussian standard deviation
-        gammaL: Lorentian Half Width
+        log_nbeta: log normalized Gaussian standard deviation (Nlines)
+        log_ngammaL: log normalized Lorentian Half Width (Nlines)
         dLarray: dLarray
         
     Returns:
