@@ -5,7 +5,7 @@ from jax.lax import scan
 
 
 def folded_voigt_kernel_logst(k,log_nstbeta,log_ngammaL,dLarray):
-    """Folded Fourier Kernel of the Voigt Profile
+    """Folded Fourier Kernel of the Voigt Profile for a common normalized beta.
     
     Args:
         k: conjugate wavenumber
@@ -25,8 +25,6 @@ def folded_voigt_kernel_logst(k,log_nstbeta,log_ngammaL,dLarray):
 
     beta=jnp.exp(log_nstbeta)
     gammaL=jnp.exp(log_ngammaL)
-#    print(jnp.max(k))
-#    print(dLarray)
     def ffold(val,dL):
         val=val+jnp.exp(-2.0*((jnp.pi*beta*(k[:,None]+dL))**2 \
                               + jnp.pi*gammaL[None,:]*(k[:,None]+dL)))
@@ -34,7 +32,6 @@ def folded_voigt_kernel_logst(k,log_nstbeta,log_ngammaL,dLarray):
                               + jnp.pi*gammaL[None,:]*(dL-k[:,None])))
         null=0.0
         return val, null
-    print(jnp.shape(k),jnp.shape(gammaL),jnp.shape(beta))
     val=jnp.exp(-2.0*((jnp.pi*beta*k[:,None])**2 + jnp.pi*gammaL[None,:]*k[:,None]))
     
     val,nullstack=scan(ffold, val, dLarray)
@@ -42,14 +39,14 @@ def folded_voigt_kernel_logst(k,log_nstbeta,log_ngammaL,dLarray):
     return val
 
 
-#@jit
+@jit
 def rundit_fold_logredst(S,nu_lines,cnbeta,gammaL,nu_grid,ngammaL_grid,dLarray,dv_lines,dv_grid):
-    """run DIT folded voigt for ESLOG for reduced wavenumebr inputs (against the truncation error) for a constant beta
+    """run DIT folded voigt for ESLOG for reduced wavenumebr inputs (against the truncation error) for a constant normalized beta
 
     Args:
        S: line strength (Nlines)
        nu_lines: (reduced) line center (Nlines)
-       cnbeta: constant normalized Gaussian STD 
+       cnbeta: constant normalized Gaussian STD (beta)
        gammaL: Lorentian half width (Nlines)
        nu_grid: (reduced) evenly spaced log (ESLOG) wavenumber grid
        ngammaL_grid: normalized gammaL grid
@@ -62,8 +59,6 @@ def rundit_fold_logredst(S,nu_lines,cnbeta,gammaL,nu_grid,ngammaL_grid,dLarray,d
 
     
     """
-
-
 
     Ng_nu=len(nu_grid)
     Ng_gammaL=len(ngammaL_grid)

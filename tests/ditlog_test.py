@@ -1,3 +1,11 @@
+"""This version is a test for DITlog.
+
+   * DITlog uses a 3D version of DIT
+   * We need to be careful for the truncation error of the wavenumber grid.
+   * To do so, reduced wavenumber is useful. This test compares both the original and reduced wavenumber grid and line center. 
+
+"""
+
 from addit.dit import rundit, runditfold, runditf1, make_dLarray
 from addit.ditlog import rundit_fold_log,  rundit_fold_logred
 import jax.numpy as jnp

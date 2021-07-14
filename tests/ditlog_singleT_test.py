@@ -1,5 +1,7 @@
 """This version is a test for a constant nornalized beta (a single T) for DITlog.
 
+   * Assuming a common temperature for the same isotope lines, we can reduce the dimension of the DIT grids (NC), for a Doppler width. In this case, a normalized STD by nu_lines/R should be constant.  
+
 """
 from addit.dit import rundit, runditfold, runditf1, make_dLarray
 from addit.ditlog import rundit_fold_log,  rundit_fold_logred
