@@ -12,6 +12,14 @@ addit.dit module
    :undoc-members:
    :show-inheritance:
 
+addit.ditlog module
+-------------------
+
+.. automodule:: addit.ditlog
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 addit.interpolate module
 ------------------------
 
