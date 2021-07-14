@@ -91,20 +91,21 @@ def rundit_fold_log(S,nu_lines,beta,gammaL,nu_grid,R,nbeta_grid,ngammaL_grid,dLa
 
     return xs
 
-@jit
-def rundit_fold_logdv(S,nu_lines,beta,gammaL,nu_grid,R,nbeta_grid,ngammaL_grid,dLarray):
-    """run DIT folded voigt for an arbitrary ESLOG using direct computation of dv
+#@jit
+def rundit_fold_logdv(S,nu_lines,beta,gammaL,nu_grid,nbeta_grid,ngammaL_grid,dLarray,dv_lines,dv_grid):
+    """run DIT folded voigt for an arbitrary ESLOG 
 
     Args:
        S: line strength (Nlines)
-       nu_lines: line center (Nlines)
+       nu_lines: (reduced) line center (Nlines)
        beta: Gaussian STD (Nlines)
        gammaL: Lorentian half width (Nlines)
-       nu_grid: evenly spaced log (ESLOG) wavenumber grid
-       R: spectral resolution
+       nu_grid: (reduced) evenly spaced log (ESLOG) wavenumber grid
        nbeta_grid: normalized beta grid 
        ngammaL_grid: normalized gammaL grid
        dLarray: dLarray
+       dv_lines: 
+       dv_grid:
 
     Returns:
        Cross section
@@ -118,11 +119,8 @@ def rundit_fold_logdv(S,nu_lines,beta,gammaL,nu_grid,R,nbeta_grid,ngammaL_grid,d
     Ng_beta=len(nbeta_grid)
     Ng_gammaL=len(ngammaL_grid)
 
-    dvx = jnp.interp(nu_lines, nu_grid[1:-1], 0.5*(nu_grid[2:] - nu_grid[:-2]))
-    nbeta=beta/dvx
-    ngammaL=gammaL/dvx
-
-
+    nbeta=beta/dv_lines
+    ngammaL=gammaL/dv_lines
     log_nbeta=jnp.log(nbeta)
     log_ngammaL=jnp.log(ngammaL)
     
@@ -135,10 +133,6 @@ def rundit_fold_logdv(S,nu_lines,beta,gammaL,nu_grid,R,nbeta_grid,ngammaL_grid,d
     fftval = jnp.fft.rfft(valbuf,axis=0)
     vk=folded_voigt_kernel_log(k, log_nbeta_grid,log_ngammaL_grid,dLarray)
     fftvalsum = jnp.sum(fftval*vk,axis=(1,2))
-
-#    dv=nu_grid/R
-    dv = jnp.interp(nu_grid, nu_grid[1:-1], 0.5*(nu_grid[2:] - nu_grid[:-2]))
-
-    xs=jnp.fft.irfft(fftvalsum)[:Ng_nu]/dv
-
+    xs=jnp.fft.irfft(fftvalsum)[:Ng_nu]/dvgrid
+    
     return xs
