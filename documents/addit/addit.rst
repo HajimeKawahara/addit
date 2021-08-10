@@ -20,6 +20,14 @@ addit.ditlog module
    :undoc-members:
    :show-inheritance:
 
+addit.ditlogst module
+---------------------
+
+.. automodule:: addit.ditlogst
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 addit.interpolate module
 ------------------------
 
@@ -36,6 +44,13 @@ addit.ncf module
    :undoc-members:
    :show-inheritance:
 
+addit.ncf\_slow module
+----------------------
+
+.. automodule:: addit.ncf_slow
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------

@@ -11,7 +11,7 @@ import numpy as np
 from addit.ncf import inc3D
 np.random.seed(20)
 
-N=2000
+N=20
 Ng_nu=100000
 Ng_gammaL=30
 
@@ -22,7 +22,7 @@ nus=np.logspace(np.log10(nu0),np.log10(nu1),Ng_nu) #nu grid
 R=(Ng_nu-1)/np.log(nu1/nu0) #resolution
 
 avedv=np.mean(nus)/R #averaged d wavenumber
-cnbeta=0.03/avedv #here we assume the normalized beta is constant
+cnbeta=0.3/avedv #here we assume the normalized beta is constant
 gammaL=np.random.rand(N)*1.0
 S=np.logspace(0.0,3.0,N)
 S[0:20]=1.e4

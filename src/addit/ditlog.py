@@ -4,7 +4,7 @@ from addit.ncf import inc3D
 from jax.lax import scan
 
 
-def folded_voigt_kernel_log(k,log_nbeta,log_ngammaL,dLarray):
+def folded_voigt_kernel_log_real(k,log_nbeta,log_ngammaL,dLarray):
     """Folded Fourier Kernel of the Voigt Profile
     
     Args:
@@ -41,7 +41,43 @@ def folded_voigt_kernel_log(k,log_nbeta,log_ngammaL,dLarray):
     
     return val
 
-@jit
+def folded_voigt_kernel_log(k,log_nbeta,log_ngammaL,dLarray):
+    """Folded Fourier Kernel of the Voigt Profile
+    
+    Args:
+        k: conjugate wavenumber
+        log_nbeta: log normalized Gaussian standard deviation (Nlines)
+        log_ngammaL: log normalized Lorentian Half Width (Nlines)
+        dLarray: dLarray
+            
+    Returns:
+        kernel (N_x,N_beta,N_gammaL)
+    
+    Note:
+        Conversions to the (full) width, wG and wL are as follows: 
+        wG=2*sqrt(2*ln2) beta
+        wL=2*gamma
+    
+    """
+
+    beta=jnp.exp(log_nbeta)
+    gammaL=jnp.exp(log_ngammaL)
+    def ffold(val,dL):
+        val=val+jnp.exp(-2.0*((jnp.pi*beta[None,:,None]*(k[:,None,None]+dL))**2 \
+                              + jnp.pi*gammaL[None,None,:]*(k[:,None,None]+dL)))
+        val=val+jnp.exp(-2.0*((jnp.pi*beta[None,:,None]*(k[:,None,None]-dL))**2 \
+                              + jnp.pi*gammaL[None,None,:]*(dL-k[:,None,None])))
+        null=0.0
+        return val, null
+    
+    val=jnp.exp(-2.0*((jnp.pi*beta[None,:,None]*k[:,None,None])**2 + jnp.pi*gammaL[None,None,:]*k[:,None,None]))
+    #    val=ex+(1j)*ex*(beta[None,:,None]**2)/R*k[:,None,None]
+    val,nullstack=scan(ffold, val, dLarray)
+    
+    return val
+
+
+#@jit
 def rundit_fold_log(S,nu_lines,beta,gammaL,nu_grid,R,nbeta_grid,ngammaL_grid,dLarray):
     """run DIT folded voigt for an arbitrary ESLOG
 
@@ -103,6 +139,7 @@ def rundit_fold_logred(S,nu_lines,beta,gammaL,nu_grid,nbeta_grid,ngammaL_grid,dL
        dLarray: dLarray
        dv_lines: delta wavenumber for lines i.e. nu_lines/R
        dv_grid: delta wavenumber for nu_grid i.e. nu_grid/R
+       R
 
     Returns:
        Cross section
