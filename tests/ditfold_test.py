@@ -5,7 +5,7 @@ from addit.ncf import inc3D
 np.random.seed(20)
 
 N=2000
-Ng_nu=100000
+Ng_nu=10000
 Ng_beta=30
 Ng_gammaL=30
 
