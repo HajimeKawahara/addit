@@ -24,7 +24,8 @@ jgammaL=jnp.array(gammaL)
 import time
 ts=time.time()
 #for i in range(0,1840):
-for i in range(0,1198):
+Nc=10000
+for i in range(0,Nc):
     F0in=rundit(S,jnu_lines,jbeta,jgammaL,nus,beta_grid,gammaL_grid)
 te=time.time()
-print(te-ts,"sec")
+print((te-ts)/Nc,"sec/eva")
