@@ -192,13 +192,13 @@ def folded_voigt_kernel(k,beta,gammaL,Nfold,dnu, dLarray):
 
     def ffold(val,dL):
         val=val+jnp.exp(-2.0*((jnp.pi*beta[None,:,None]*(k[:,None,None]+dL))**2 \
-                              + 4.0*jnp.pi*gammaL[None,None,:]*(k[:,None,None]+dL)))
+                              + jnp.pi*gammaL[None,None,:]*(k[:,None,None]+dL)))
         val=val+jnp.exp(-2.0*((jnp.pi*beta[None,:,None]*(k[:,None,None]-dL))**2 \
-                              + 4.0*jnp.pi*gammaL[None,None,:]*(dL-k[:,None,None])))
+                              + jnp.pi*gammaL[None,None,:]*(dL-k[:,None,None])))
         null=0.0
         return val, null
     
-    val=jnp.exp(-2.0*((jnp.pi*beta[None,:,None]*k[:,None,None])**2 + 4.0*jnp.pi*gammaL[None,None,:]*k[:,None,None]))
+    val=jnp.exp(-2.0*((jnp.pi*beta[None,:,None]*k[:,None,None])**2 + jnp.pi*gammaL[None,None,:]*k[:,None,None]))
     
     val,nullstack=scan(ffold, val, dLarray)
     
