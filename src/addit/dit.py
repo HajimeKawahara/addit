@@ -2,6 +2,7 @@ import jax.numpy as jnp
 from jax import jit
 from addit.ncf import inc3D
 from jax.lax import scan
+from jax.ops import index_add
 
 def make_dLarray(Nfold,dnu):
     """compute dLarray for the DIT folding
@@ -35,7 +36,7 @@ def voigt_kernel(k, beta,gammaL):
         wL=2*gamma
     
     """
-    val=(jnp.pi*beta[None,:,None]*k[:,None,None])**2 + jnp.pi*gammaL[None,None,:]*k[:,None,None]
+    val=(jnp.pi*beta[None,:,None]*k[:,None,None])**2 + 4*jnp.pi*gammaL[None,None,:]*k[:,None,None]
     return jnp.exp(-2.0*val)
 
 
@@ -67,14 +68,103 @@ def rundit(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid):
     log_gammaL_grid = jnp.log(gammaL_grid)
     
     dnu = (nu_grid[-1]-nu_grid[0])/(Ng_nu-1)
-    k = jnp.fft.rfftfreq(2*Ng_nu,dnu)
     val=inc3D(S,nu_lines,log_beta,log_gammaL,nu_grid,log_beta_grid,log_gammaL_grid)
+    #Nbuf=1
+    #k = jnp.fft.rfftfreq(Ng_nu,dnu)
+    #valbuf=val
+    #Nbuf=2
+    k = jnp.fft.rfftfreq(2*Ng_nu,dnu)
     valbuf=jnp.vstack([val,jnp.zeros_like(val)])
+    #Nbuf=4
+    #k = jnp.fft.rfftfreq(4*Ng_nu,dnu)
+    #valbuf=jnp.vstack([val,jnp.zeros_like(val),jnp.zeros_like(val),jnp.zeros_like(val)])
     fftval = jnp.fft.rfft(valbuf,axis=0)
     vk=voigt_kernel(k, beta_grid,gammaL_grid)
     fftvalsum = jnp.sum(fftval*vk,axis=(1,2))
     xs=jnp.fft.irfft(fftvalsum)[:Ng_nu]/dnu
     return xs
+
+@jit
+def runditnewfold(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid):
+    """run DIT
+    
+    Args:
+       S: line strength (Nlines)
+       nu_lines: line center (Nlines)
+       beta: Gaussian STD (Nlines)
+       gammaL: Lorentian half width (Nlines)
+       nu_grid: linear wavenumber grid
+       beta_grid: beta grid
+       gammaL_grid: gammaL grid
+
+    Returns:
+       Cross section
+
+    """
+    Ng_nu=len(nu_grid)
+    Ng_beta=len(beta_grid)
+    Ng_gammaL=len(gammaL_grid)
+    
+    log_beta=jnp.log(beta)
+    log_gammaL=jnp.log(gammaL)
+    
+    log_beta_grid = jnp.log(beta_grid)
+    log_gammaL_grid = jnp.log(gammaL_grid)
+
+
+    dnu = (nu_grid[-1]-nu_grid[0])/(Ng_nu-1)
+    val=inc3D(S,nu_lines,log_beta,log_gammaL,nu_grid,log_beta_grid,log_gammaL_grid)
+    #Nbuf=1
+    k = jnp.fft.rfftfreq(Ng_nu,dnu)
+    valbuf=val
+    #Nbuf=2
+    #k = jnp.fft.rfftfreq(2*Ng_nu,dnu)
+    #valbuf=jnp.vstack([val,jnp.zeros_like(val)])
+    #Nbuf=4
+    #k = jnp.fft.rfftfreq(4*Ng_nu,dnu)
+    #valbuf=jnp.vstack([val,jnp.zeros_like(val),jnp.zeros_like(val),jnp.zeros_like(val)])
+
+    fftval = jnp.fft.rfft(valbuf,axis=0)
+    vk=voigt_kernel(k, beta_grid,gammaL_grid)
+    fftvalsum = jnp.sum(fftval*vk,axis=(1,2))
+    xs=jnp.fft.irfft(fftvalsum)[:Ng_nu]/dnu
+
+    
+    if True:
+        km = jnp.fft.rfftfreq(2*Ng_nu,1)
+#        km=k*dnu
+        dv=dnu
+        w=gammaL_grid #Ngw
+        vmax=dv*Ng_nu/2.0 #N_v*dv 
+        x=jnp.log(w/vmax) #Ngw
+        A = w*jnp.exp(-(0.23299924*jnp.exp(x/0.53549119) + 6.74408847)) #Ngw
+        B = w*jnp.exp(-(0.09226203*jnp.exp(x/0.49589094) + 6.82193751)) #Ngw
+        w_corr = vmax*jnp.exp(0.18724358*jnp.exp(x/0.50806536) - 0.93309186) #Ngw
+        w = w_corr/dv #Ngw
+        gE_FT = 2.*w[None,:]/(1. + 4.*jnp.pi**2*km[:,None]**2*w[None,:]**2)  #Nnu x Ngw
+
+
+        Err_corr = A[None,:]*gE_FT*100/vmax**2 #Nnu x Ngw
+
+        #   later   
+        zeroindex=jnp.zeros(len(k),dtype=int) #0 [Nnu]
+        zeroindex=index_add(zeroindex, 0, 1.0)
+        Err_corr = Err_corr + zeroindex[:,None]*B[None,:]*200/vmax/dv
+        I_alternate = 1-(jnp.arange(len(k))&1)*2 #Nnu
+        Err_corr = Err_corr*I_alternate[:,None]
+        Err_corr=Err_corr[:Ng_nu]
+
+    
+#    print(jnp.shape(Err_corr)) #5001, 30
+#    import sys
+#    sys.exit()
+    I_g_FT=  (fftval*vk)
+    I_g_FT=I_g_FT[:Ng_nu] - Err_corr[:,None,:]/nu_grid[:,None,None]
+#    I_g_FT = I_g_FT - (Err_corr[:,None,:])#/(nu_grid[:,None,None])
+    xs = jnp.sum(jnp.fft.irfft(I_g_FT,axis=0),axis=(1,2))[:Ng_nu]/dnu
+    return xs
+
+
 
 @jit
 def folded_voigt_kernel(k,beta,gammaL,Nfold,dnu, dLarray):
@@ -94,19 +184,19 @@ def folded_voigt_kernel(k,beta,gammaL,Nfold,dnu, dLarray):
     Note:
         Conversions to the (full) width, wG and wL are as follows: 
         wG=2*sqrt(2*ln2) beta
-        wL=2*gamma
+        wL=gamma
     
     """
 
     def ffold(val,dL):
         val=val+jnp.exp(-2.0*((jnp.pi*beta[None,:,None]*(k[:,None,None]+dL))**2 \
-                              + jnp.pi*gammaL[None,None,:]*(k[:,None,None]+dL)))
+                              + 4.0*jnp.pi*gammaL[None,None,:]*(k[:,None,None]+dL)))
         val=val+jnp.exp(-2.0*((jnp.pi*beta[None,:,None]*(k[:,None,None]-dL))**2 \
-                              + jnp.pi*gammaL[None,None,:]*(dL-k[:,None,None])))
+                              + 4.0*jnp.pi*gammaL[None,None,:]*(dL-k[:,None,None])))
         null=0.0
         return val, null
     
-    val=jnp.exp(-2.0*((jnp.pi*beta[None,:,None]*k[:,None,None])**2 + jnp.pi*gammaL[None,None,:]*k[:,None,None]))
+    val=jnp.exp(-2.0*((jnp.pi*beta[None,:,None]*k[:,None,None])**2 + 4.0*jnp.pi*gammaL[None,None,:]*k[:,None,None]))
     
     val,nullstack=scan(ffold, val, dLarray)
     
@@ -143,9 +233,16 @@ def runditfold(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid,Nfold,dLarra
     log_gammaL_grid = jnp.log(gammaL_grid)
     
     dnu = (nu_grid[-1]-nu_grid[0])/(Ng_nu-1)
-    k = jnp.fft.rfftfreq(2*Ng_nu,dnu)
     val=inc3D(S,nu_lines,log_beta,log_gammaL,nu_grid,log_beta_grid,log_gammaL_grid)
-    valbuf=jnp.vstack([val,jnp.zeros_like(val)])
+    #Nbuf=1
+    k = jnp.fft.rfftfreq(Ng_nu,dnu)
+    valbuf=val
+    #Nbuf=2
+    #k = jnp.fft.rfftfreq(2*Ng_nu,dnu)
+    #valbuf=jnp.vstack([val,jnp.zeros_like(val)])
+    #Nbuf=4
+    #k = jnp.fft.rfftfreq(4*Ng_nu,dnu)
+    #valbuf=jnp.vstack([val,jnp.zeros_like(val),jnp.zeros_like(val),jnp.zeros_like(val)])
     fftval = jnp.fft.rfft(valbuf,axis=0)
     vk=folded_voigt_kernel(k, beta_grid,gammaL_grid, Nfold, dnu, dLarray)
     fftvalsum = jnp.sum(fftval*vk,axis=(1,2))
@@ -259,11 +356,6 @@ if __name__ == "__main__":
     print("-gamma-------------")
     print(gammaL)
     print(gammaL_grid)
-#    print(np.sum(val,axis=0))
-#    plt.imshow(np.sum(val,axis=0))
-#    plt.show()
-#    import sys
-#    sys.exit()
 
     xsv=xsection(nus,nu_lines,beta,gammaL,S)
 
