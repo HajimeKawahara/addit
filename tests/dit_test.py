@@ -13,7 +13,7 @@ Ng_gammaL=30
 
 nus=np.linspace(2000.0,2250.0,Ng_nu) #nu grid
 beta=np.random.rand(N)*0.99+0.01
-gammaL=np.ones(N)*10.0
+gammaL=np.ones(N)*30.0
 beta_grid=np.logspace(np.log10(np.min(beta)),0,Ng_beta) #beta grid
 gammaL_grid=np.logspace(np.log10(0.3),np.log10(30.0),Ng_gammaL)#gammaL grid
 S=np.logspace(0.0,3.0,N)
