@@ -36,7 +36,9 @@ def voigt_kernel(k, beta,gammaL):
         wL=2*gamma
     
     """
-    val=(jnp.pi*beta[None,:,None]*k[:,None,None])**2 + 4*jnp.pi*gammaL[None,None,:]*k[:,None,None]
+    val=(jnp.pi*beta[None,:,None]*k[:,None,None])**2 + jnp.pi*gammaL[None,None,:]*k[:,None,None]
+#    val=(jnp.pi*beta[None,:,None]*k[:,None,None])**2 + 4*jnp.pi*gammaL[None,None,:]*k[:,None,None]
+
     return jnp.exp(-2.0*val)
 
 
