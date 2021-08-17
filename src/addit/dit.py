@@ -86,7 +86,7 @@ def rundit(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid):
     xs=jnp.fft.irfft(fftvalsum)[:Ng_nu]/dnu
     return xs
 
-@jit
+#@jit
 def runditnewfold(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid):
     """run DIT
     
@@ -126,18 +126,20 @@ def runditnewfold(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid):
     #k = jnp.fft.rfftfreq(4*Ng_nu,dnu)
     #valbuf=jnp.vstack([val,jnp.zeros_like(val),jnp.zeros_like(val),jnp.zeros_like(val)])
 
-    fftval = jnp.fft.rfft(valbuf,axis=0)
+    fftval = jnp.fft.rfft(valbuf,axis=0) #Stilde
+    print(jnp.shape(fftval),jnp.shape(k))
     vk=voigt_kernel(k, beta_grid,gammaL_grid)
-    fftvalsum = jnp.sum(fftval*vk,axis=(1,2))
-    xs=jnp.fft.irfft(fftvalsum)[:Ng_nu]/dnu
+
+#    fftvalsum = jnp.sum(fftval*vk,axis=(1,2))
+#    xs=jnp.fft.irfft(fftvalsum)[:Ng_nu]/dnu
 
     
     if True:
-        km = jnp.fft.rfftfreq(2*Ng_nu,1)
+        km = jnp.fft.rfftfreq(Ng_nu,1)
 #        km=k*dnu
         dv=dnu
-        w=gammaL_grid #Ngw
-        vmax=dv*Ng_nu/2.0 #N_v*dv 
+        w=2.0*gammaL_grid #Ngw
+        vmax=dv*Ng_nu #N_v*dv 
         x=jnp.log(w/vmax) #Ngw
         A = w*jnp.exp(-(0.23299924*jnp.exp(x/0.53549119) + 6.74408847)) #Ngw
         B = w*jnp.exp(-(0.09226203*jnp.exp(x/0.49589094) + 6.82193751)) #Ngw
@@ -160,10 +162,17 @@ def runditnewfold(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid):
 #    print(jnp.shape(Err_corr)) #5001, 30
 #    import sys
 #    sys.exit()
-    I_g_FT=  (fftval*vk)
-    I_g_FT=I_g_FT[:Ng_nu] - Err_corr[:,None,:]/nu_grid[:,None,None]
-#    I_g_FT = I_g_FT - (Err_corr[:,None,:])#/(nu_grid[:,None,None])
+
+
+    I_g_FT=  fftval*vk #(I)
+#    I_g_FT=jnp.fft.fftshift(fftval*vk,axes=(1,2))
+#    I_g_FT = I_g_FT - (Err_corr[:,None,:])*dv
+
+    #xs = jnp.sum(jnp.fft.irfft(I_g_FT,axis=0),axis=(1,2))[:Ng_nu]/dnu #(I)
+#    I_g_FT=jnp.fft.ifftshift(I_g_FT,axes=(1,2))
     xs = jnp.sum(jnp.fft.irfft(I_g_FT,axis=0),axis=(1,2))[:Ng_nu]/dnu
+#    xs = jnp.fft.ifftshift(jnp.sum(jnp.fft.irfft(I_g_FT,axis=0),axis=(1,2))[:Ng_nu])/dnu
+
     return xs
 
 
