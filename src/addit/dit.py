@@ -41,6 +41,63 @@ def voigt_kernel(k, beta,gammaL):
 
     return jnp.exp(-2.0*val)
 
+def newfold_voigt_kernel(k, beta,gammaL, vmax):
+    """Fourier Kernel of the Voigt Profile
+    
+    Args:
+        k: conjugated of wavenumber
+        beta: Gaussian standard deviation
+        gammaL: Lorentian Half Width
+        
+    Returns:
+        kernel (N_x,N_beta,N_gammaL)
+    
+    Note:
+        Conversions to the (full) width, wG and wL are as follows: 
+        wG=2*sqrt(2*ln2) beta
+        wL=2*gamma
+    
+    """
+
+    Nk=len(k)
+    valG=jnp.exp(-2.0*(jnp.pi*beta[None,:,None]*k[:,None,None])**2)
+    valL=jnp.exp(-2.0*jnp.pi*gammaL[None,None,:]*k[:,None,None])
+    q = 2.0*gammaL/(vmax/2.0) #Ngamma w=2*gamma
+    
+    w_corr = vmax*(0.39560962 * jnp.exp(0.19461568*q**2)) #Ngamma
+    A_corr = q*(0.09432246 * jnp.exp(-0.06592025*q**2)) #Ngamma
+    B_corr = q*(0.11202818 * jnp.exp(-0.09048447*q**2)) #Ngamma
+    pmarray=-jnp.ceil(2*(jnp.abs(jnp.sin(jnp.arange(Nk)*jnp.pi/2)))-1.1) #this is very temoprary implementation
+    zeroindex=jnp.zeros(Nk,dtype=int) #Nk
+    zeroindex=index_add(zeroindex, 0, 1.0)
+    C_corr = zeroindex[:,None]*2.0*B_corr[None,:] #Nk x Ngamma    
+    I_corr = A_corr/(1.0+4.0*jnp.pi**2*w_corr[None,None,:]**2*k[:,None,None]**2) + C_corr[:,None,:]
+    I_corr = I_corr*pmarray[:,None,None]
+    valL = valL - I_corr
+    
+    return valG*valL
+
+
+"""
+lambda x,w: np.exp(-np.abs(x)*pi*w)
+
+coeff_w = [0.39560962,-0.19461568]
+coeff_A = [0.09432246, 0.06592025]
+coeff_B = [0.11202818, 0.09048447]
+corr_fun = lambda x,c0,c1: c0 * np.exp(-c1*x**2)
+def gL_FT_corr(x_arr, wL):
+    result = gL_FT(x_arr, wL)
+    vmax = 1/(2*x_arr[1])
+    q = wL/vmax
+    w_corr = corr_fun(q, *coeff_w)*vmax
+    A_corr = corr_fun(q, *coeff_A)*q
+    B_corr = corr_fun(q, *coeff_B)*q
+    I_corr = A_corr * gE_FT(x_arr, w_corr)
+    I_corr[0] += 2*B_corr
+    I_corr[1::2] *= -1
+    result -= I_corr
+    return result
+"""
 
 @jit
 def rundit(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid):
@@ -72,22 +129,24 @@ def rundit(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid):
     dnu = (nu_grid[-1]-nu_grid[0])/(Ng_nu-1)
     val=inc3D(S,nu_lines,log_beta,log_gammaL,nu_grid,log_beta_grid,log_gammaL_grid)
     #Nbuf=1
-    #k = jnp.fft.rfftfreq(Ng_nu,dnu)
-    #valbuf=val
+    k = jnp.fft.rfftfreq(Ng_nu,dnu)
+    valbuf=val
     #Nbuf=2
-    k = jnp.fft.rfftfreq(2*Ng_nu,dnu)
-    valbuf=jnp.vstack([val,jnp.zeros_like(val)])
+    #k = jnp.fft.rfftfreq(2*Ng_nu,dnu)
+    #valbuf=jnp.vstack([val,jnp.zeros_like(val)])
     #Nbuf=4
     #k = jnp.fft.rfftfreq(4*Ng_nu,dnu)
     #valbuf=jnp.vstack([val,jnp.zeros_like(val),jnp.zeros_like(val),jnp.zeros_like(val)])
+    
     fftval = jnp.fft.rfft(valbuf,axis=0)
     vk=voigt_kernel(k, beta_grid,gammaL_grid)
+
     fftvalsum = jnp.sum(fftval*vk,axis=(1,2))
     xs=jnp.fft.irfft(fftvalsum)[:Ng_nu]/dnu
     return xs
 
-#@jit
-def runditnewfold(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid):
+@jit
+def rundit_newfold(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid):
     """run DIT
     
     Args:
@@ -127,51 +186,11 @@ def runditnewfold(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid):
     #valbuf=jnp.vstack([val,jnp.zeros_like(val),jnp.zeros_like(val),jnp.zeros_like(val)])
 
     fftval = jnp.fft.rfft(valbuf,axis=0) #Stilde
-    print(jnp.shape(fftval),jnp.shape(k))
-    vk=voigt_kernel(k, beta_grid,gammaL_grid)
+    vmax=Ng_nu*dnu
+    vk=newfold_voigt_kernel(k, beta_grid,gammaL_grid,vmax)
 
-#    fftvalsum = jnp.sum(fftval*vk,axis=(1,2))
-#    xs=jnp.fft.irfft(fftvalsum)[:Ng_nu]/dnu
-
-    
-    if True:
-        km = jnp.fft.rfftfreq(Ng_nu,1)
-#        km=k*dnu
-        dv=dnu
-        w=2.0*gammaL_grid #Ngw
-        vmax=dv*Ng_nu #N_v*dv 
-        x=jnp.log(w/vmax) #Ngw
-        A = w*jnp.exp(-(0.23299924*jnp.exp(x/0.53549119) + 6.74408847)) #Ngw
-        B = w*jnp.exp(-(0.09226203*jnp.exp(x/0.49589094) + 6.82193751)) #Ngw
-        w_corr = vmax*jnp.exp(0.18724358*jnp.exp(x/0.50806536) - 0.93309186) #Ngw
-        w = w_corr/dv #Ngw
-        gE_FT = 2.*w[None,:]/(1. + 4.*jnp.pi**2*km[:,None]**2*w[None,:]**2)  #Nnu x Ngw
-
-
-        Err_corr = A[None,:]*gE_FT*100/vmax**2 #Nnu x Ngw
-
-        #   later   
-        zeroindex=jnp.zeros(len(k),dtype=int) #0 [Nnu]
-        zeroindex=index_add(zeroindex, 0, 1.0)
-        Err_corr = Err_corr + zeroindex[:,None]*B[None,:]*200/vmax/dv
-        I_alternate = 1-(jnp.arange(len(k))&1)*2 #Nnu
-        Err_corr = Err_corr*I_alternate[:,None]
-        Err_corr=Err_corr[:Ng_nu]
-
-    
-#    print(jnp.shape(Err_corr)) #5001, 30
-#    import sys
-#    sys.exit()
-
-
-    I_g_FT=  fftval*vk #(I)
-#    I_g_FT=jnp.fft.fftshift(fftval*vk,axes=(1,2))
-#    I_g_FT = I_g_FT - (Err_corr[:,None,:])*dv
-
-    #xs = jnp.sum(jnp.fft.irfft(I_g_FT,axis=0),axis=(1,2))[:Ng_nu]/dnu #(I)
-#    I_g_FT=jnp.fft.ifftshift(I_g_FT,axes=(1,2))
-    xs = jnp.sum(jnp.fft.irfft(I_g_FT,axis=0),axis=(1,2))[:Ng_nu]/dnu
-#    xs = jnp.fft.ifftshift(jnp.sum(jnp.fft.irfft(I_g_FT,axis=0),axis=(1,2))[:Ng_nu])/dnu
+    fftvalsum = jnp.sum(fftval*vk,axis=(1,2))
+    xs=jnp.fft.irfft(fftvalsum)[:Ng_nu]/dnu
 
     return xs
 

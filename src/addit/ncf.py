@@ -14,6 +14,7 @@ from jax.ops import index as joi
 
 def getix(x,xv):
     indarr=jnp.arange(len(xv))
+    print(np.shape(x),np.shape(xv),np.shape(indarr))
     pos = jnp.interp(x,xv,indarr)
     index = (pos).astype(int)
     cont = (pos-index)
