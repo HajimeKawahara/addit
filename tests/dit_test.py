@@ -17,7 +17,6 @@ gammaL=np.ones(N)*30.0
 beta_grid=np.logspace(np.log10(np.min(beta)),0,Ng_beta) #beta grid
 gammaL_grid=np.logspace(np.log10(0.3),np.log10(30.0),Ng_gammaL)#gammaL grid
 S=np.logspace(0.0,3.0,N)
-
 nu_lines=np.array([nus[0]+(nus[-1]-nus[0])/2.0])
 
 #F0=rundit(S,nu_lines,beta,gammaL,nus,beta_grid,gammaL_grid)
@@ -50,7 +49,7 @@ plt.plot(nus,F0_newf,label="DIT (new fold)",color="red",ls="dashed")
 plt.plot(nus,xsvX,color="green",alpha=1.0)
 plt.plot(nus,F0X,color="black",ls="dashed")
 plt.plot(nus,F0X_newf,color="red",ls="dashed")
-
+plt.title("LINEAR DIT")
 plt.yscale("log")
 plt.legend()
 
@@ -66,4 +65,5 @@ plt.plot(nus,np.abs(F0X_newf/xsvX-1),label="DIT-direct (newfold)",alpha=0.3,colo
 plt.ylim(1.e-4,100.0)
 plt.yscale("log")
 plt.legend()
+plt.savefig("newfold_linear.png")
 plt.show()

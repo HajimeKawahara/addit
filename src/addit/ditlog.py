@@ -2,15 +2,17 @@ import jax.numpy as jnp
 from jax import jit
 from addit.ncf import inc3D
 from jax.lax import scan
+from jax.ops import index_add
 
-def newfolded_voigt_kernel_log(k,log_nbeta,log_ngammaL):
+def newfold_voigt_kernel_log(k,log_nbeta,log_ngammaL,vmax):
     """Folded Fourier Kernel of the Voigt Profile
     
     Args:
         k: conjugate wavenumber
         log_nbeta: log normalized Gaussian standard deviation (Nlines)
         log_ngammaL: log normalized Lorentian Half Width (Nlines)
-        
+        vmax: Nnu x dq
+
     Returns:
         kernel (N_x,N_beta,N_gammaL)
     
@@ -20,12 +22,26 @@ def newfolded_voigt_kernel_log(k,log_nbeta,log_ngammaL):
         wL=2*gamma
     
     """
-
     beta=jnp.exp(log_nbeta)
     gammaL=jnp.exp(log_ngammaL)
-    val=jnp.exp(-2.0*((jnp.pi*beta[None,:,None]*k[:,None,None])**2 + jnp.pi*gammaL[None,None,:]*k[:,None,None]))
+
+    Nk=len(k)
+    valG=jnp.exp(-2.0*(jnp.pi*beta[None,:,None]*k[:,None,None])**2)
+    valL=jnp.exp(-2.0*jnp.pi*gammaL[None,None,:]*k[:,None,None])
+    q = 2.0*gammaL/(vmax) #Ngamma w=2*gamma
     
-    return val
+    w_corr = vmax*(0.39560962 * jnp.exp(0.19461568*q**2)) #Ngamma
+    A_corr = q*(0.09432246 * jnp.exp(-0.06592025*q**2)) #Ngamma
+    B_corr = q*(0.11202818 * jnp.exp(-0.09048447*q**2)) #Ngamma
+    pmarray=-jnp.ceil(2*(jnp.abs(jnp.sin(jnp.arange(Nk)*jnp.pi/2)))-1.1) #this is very temoprary implementation
+    zeroindex=jnp.zeros(Nk,dtype=int) #Nk
+    zeroindex=index_add(zeroindex, 0, 1.0)
+    C_corr = zeroindex[:,None]*2.0*B_corr[None,:] #Nk x Ngamma    
+    I_corr = A_corr/(1.0+4.0*jnp.pi**2*w_corr[None,None,:]**2*k[:,None,None]**2) + C_corr[:,None,:]
+    I_corr = I_corr*pmarray[:,None,None]
+    valL = valL - I_corr
+    
+    return valG*valL
 
 
 def nofolded_voigt_kernel_log(k,log_nbeta,log_ngammaL):
@@ -75,8 +91,6 @@ def folded_voigt_kernel_log_real(k,log_nbeta,log_ngammaL,dLarray):
 
     beta=jnp.exp(log_nbeta)
     gammaL=jnp.exp(log_ngammaL)
-#    print(jnp.max(k))
-#    print(dLarray)
     def ffold(val,dL):
         val=val+jnp.exp(-2.0*((jnp.pi*beta[None,:,None]*(k[:,None,None]+dL))**2 \
                               + jnp.pi*gammaL[None,None,:]*(k[:,None,None]+dL)))
@@ -197,8 +211,6 @@ def rundit_fold_logred(S,nu_lines,beta,gammaL,nu_grid,nbeta_grid,ngammaL_grid,dL
     
     """
 
-
-
     Ng_nu=len(nu_grid)
     Ng_beta=len(nbeta_grid)
     Ng_gammaL=len(ngammaL_grid)
@@ -221,9 +233,9 @@ def rundit_fold_logred(S,nu_lines,beta,gammaL,nu_grid,nbeta_grid,ngammaL_grid,dL
     
     return xs
 
-#@jit
-def rundit_nofold_logred(S,nu_lines,beta,gammaL,nu_grid,nbeta_grid,ngammaL_grid,dv_lines,dv_grid):
-    """run DIT NO folded voigt for ESLOG for reduced wavenumebr inputs (against the truncation error)
+@jit
+def rundit_newfold_logred(S,nu_lines,beta,gammaL,nu_grid,nbeta_grid,ngammaL_grid,dv_lines,dv_grid):
+    """run DIT new folded voigt for ESLOG for reduced wavenumebr inputs (against the truncation error)
 
     Args:
        S: line strength (Nlines)
@@ -256,12 +268,24 @@ def rundit_nofold_logred(S,nu_lines,beta,gammaL,nu_grid,nbeta_grid,ngammaL_grid,
     
     log_nbeta_grid = jnp.log(nbeta_grid)
     log_ngammaL_grid = jnp.log(ngammaL_grid)
-
-    k = jnp.fft.rfftfreq(2*Ng_nu,1)
     val=inc3D(S,nu_lines,log_nbeta,log_ngammaL,nu_grid,log_nbeta_grid,log_ngammaL_grid)
+
+    #Nbuf=1
+    #k = jnp.fft.rfftfreq(Ng_nu,1)
+    #valbuf=val
+    #Nbuf=2
+    k = jnp.fft.rfftfreq(2*Ng_nu,1)
     valbuf=jnp.vstack([val,jnp.zeros_like(val)])
+    #Nbuf=4
+    #k = jnp.fft.rfftfreq(4*Ng_nu,1)
+    #valbuf=jnp.vstack([val,jnp.zeros_like(val),jnp.zeros_like(val),jnp.zeros_like(val)])
+
+#    R=(len(nu_grid)-1)/np.log(nu_grid[-1]/nu_grid[0]) #resolution
+#    q=jnp.log()
+    
     fftval = jnp.fft.rfft(valbuf,axis=0)
-    vk=nofolded_voigt_kernel_log(k, log_nbeta_grid,log_ngammaL_grid)
+    vmax=Ng_nu
+    vk=newfold_voigt_kernel_log(k, log_nbeta_grid,log_ngammaL_grid, vmax)
     fftvalsum = jnp.sum(fftval*vk,axis=(1,2))
     xs=jnp.fft.irfft(fftvalsum)[:Ng_nu]/dv_grid
     

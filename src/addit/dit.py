@@ -48,7 +48,8 @@ def newfold_voigt_kernel(k, beta,gammaL, vmax):
         k: conjugated of wavenumber
         beta: Gaussian standard deviation
         gammaL: Lorentian Half Width
-        
+        vmax: Nnu x dq
+
     Returns:
         kernel (N_x,N_beta,N_gammaL)
     
@@ -62,7 +63,7 @@ def newfold_voigt_kernel(k, beta,gammaL, vmax):
     Nk=len(k)
     valG=jnp.exp(-2.0*(jnp.pi*beta[None,:,None]*k[:,None,None])**2)
     valL=jnp.exp(-2.0*jnp.pi*gammaL[None,None,:]*k[:,None,None])
-    q = 2.0*gammaL/(vmax/2.0) #Ngamma w=2*gamma
+    q = 2.0*gammaL/(vmax) #Ngamma w=2*gamma
     
     w_corr = vmax*(0.39560962 * jnp.exp(0.19461568*q**2)) #Ngamma
     A_corr = q*(0.09432246 * jnp.exp(-0.06592025*q**2)) #Ngamma
@@ -77,27 +78,6 @@ def newfold_voigt_kernel(k, beta,gammaL, vmax):
     
     return valG*valL
 
-
-"""
-lambda x,w: np.exp(-np.abs(x)*pi*w)
-
-coeff_w = [0.39560962,-0.19461568]
-coeff_A = [0.09432246, 0.06592025]
-coeff_B = [0.11202818, 0.09048447]
-corr_fun = lambda x,c0,c1: c0 * np.exp(-c1*x**2)
-def gL_FT_corr(x_arr, wL):
-    result = gL_FT(x_arr, wL)
-    vmax = 1/(2*x_arr[1])
-    q = wL/vmax
-    w_corr = corr_fun(q, *coeff_w)*vmax
-    A_corr = corr_fun(q, *coeff_A)*q
-    B_corr = corr_fun(q, *coeff_B)*q
-    I_corr = A_corr * gE_FT(x_arr, w_corr)
-    I_corr[0] += 2*B_corr
-    I_corr[1::2] *= -1
-    result -= I_corr
-    return result
-"""
 
 @jit
 def rundit(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid):
@@ -129,11 +109,11 @@ def rundit(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid):
     dnu = (nu_grid[-1]-nu_grid[0])/(Ng_nu-1)
     val=inc3D(S,nu_lines,log_beta,log_gammaL,nu_grid,log_beta_grid,log_gammaL_grid)
     #Nbuf=1
-    k = jnp.fft.rfftfreq(Ng_nu,dnu)
-    valbuf=val
-    #Nbuf=2
-    #k = jnp.fft.rfftfreq(2*Ng_nu,dnu)
-    #valbuf=jnp.vstack([val,jnp.zeros_like(val)])
+    #k = jnp.fft.rfftfreq(Ng_nu,dnu)
+    #valbuf=val
+    Nbuf=2
+    k = jnp.fft.rfftfreq(2*Ng_nu,dnu)
+    valbuf=jnp.vstack([val,jnp.zeros_like(val)])
     #Nbuf=4
     #k = jnp.fft.rfftfreq(4*Ng_nu,dnu)
     #valbuf=jnp.vstack([val,jnp.zeros_like(val),jnp.zeros_like(val),jnp.zeros_like(val)])
@@ -176,11 +156,11 @@ def rundit_newfold(S,nu_lines,beta,gammaL,nu_grid,beta_grid,gammaL_grid):
     dnu = (nu_grid[-1]-nu_grid[0])/(Ng_nu-1)
     val=inc3D(S,nu_lines,log_beta,log_gammaL,nu_grid,log_beta_grid,log_gammaL_grid)
     #Nbuf=1
-    k = jnp.fft.rfftfreq(Ng_nu,dnu)
-    valbuf=val
+    #k = jnp.fft.rfftfreq(Ng_nu,dnu)
+    #valbuf=val
     #Nbuf=2
-    #k = jnp.fft.rfftfreq(2*Ng_nu,dnu)
-    #valbuf=jnp.vstack([val,jnp.zeros_like(val)])
+    k = jnp.fft.rfftfreq(2*Ng_nu,dnu)
+    valbuf=jnp.vstack([val,jnp.zeros_like(val)])
     #Nbuf=4
     #k = jnp.fft.rfftfreq(4*Ng_nu,dnu)
     #valbuf=jnp.vstack([val,jnp.zeros_like(val),jnp.zeros_like(val),jnp.zeros_like(val)])

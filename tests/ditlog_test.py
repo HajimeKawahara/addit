@@ -7,7 +7,7 @@
 """
 
 from addit.dit import rundit, runditfold, runditf1, make_dLarray
-from addit.ditlog import rundit_fold_log,  rundit_fold_logred, rundit_nofold_logred
+from addit.ditlog import rundit_fold_log,  rundit_fold_logred, rundit_newfold_logred
 import jax.numpy as jnp
 import numpy as np
 from addit.ncf import inc3D
@@ -18,15 +18,14 @@ N=1
 Ng_nu=10000
 Ng_beta=29
 Ng_gammaL=30
-
-nus=np.linspace(2000.0,2250.0,Ng_nu) #nu grid
+tio=0.0
+nus=np.linspace(2000.0-tio,2250.0+tio,Ng_nu) #nu grid
 beta=np.random.rand(N)*0.99+0.01
 gammaL=np.ones(N)*30.0
 beta_grid=np.logspace(np.log10(np.min(beta)),0,Ng_beta) #beta grid
 gammaL_grid=np.logspace(np.log10(0.3),np.log10(30.0),Ng_gammaL)#gammaL grid
 S=np.logspace(0.0,3.0,N)
-
-nu_lines=np.random.rand(N)*(nus[-1]-nus[0]-200.0)+nus[0]+100.0
+nu_lines=np.array([nus[0]+(nus[-1]-nus[0])/2.0])
 
 
 R=(Ng_nu-1)/np.log(nus[-1]/nus[0]) #resolution
@@ -43,16 +42,16 @@ dv=nus/R
 dLarray=make_dLarray(2,1.0)
 Nfold=1
 
-#F0=rundit_fold_logred(S,nu_lines-nn,beta,gammaL,nus-nn,nbeta_grid_,ngammaL_grid_,dLarray,dv_lines,dv)
-F0=rundit_nofold_logred(S,nu_lines-nn,beta,gammaL,nus-nn,nbeta_grid_,ngammaL_grid_,dv_lines,dv)
+F0=rundit_fold_logred(S,nu_lines-nn,beta,gammaL,nus-nn,nbeta_grid_,ngammaL_grid_,dLarray,dv_lines,dv)
+F0f=rundit_newfold_logred(S,nu_lines-nn,beta,gammaL,nus-nn,nbeta_grid_,ngammaL_grid_,dv_lines,dv)
 
 xsv=xsection(nus,nu_lines,beta,gammaL,S)
 
 gammaL=np.ones(N)*1.0
 ngammaL_grid_=np.logspace(np.log10(np.min(gammaL/nu_lines*R)),np.log10(np.max(gammaL/nu_lines*R)),Ng_gammaL)
 
-#F0X=rundit_fold_logred(S,nu_lines-nn,beta,gammaL,nus-nn,nbeta_grid_,ngammaL_grid_,dLarray,dv_lines,dv)
-F0X=rundit_nofold_logred(S,nu_lines-nn,beta,gammaL,nus-nn,nbeta_grid_,ngammaL_grid_,dv_lines,dv)
+F0X=rundit_fold_logred(S,nu_lines-nn,beta,gammaL,nus-nn,nbeta_grid_,ngammaL_grid_,dLarray,dv_lines,dv)
+F0Xf=rundit_newfold_logred(S,nu_lines-nn,beta,gammaL,nus-nn,nbeta_grid_,ngammaL_grid_,dv_lines,dv)
 
 xsvX=xsection(nus,nu_lines,beta,gammaL,S)
 
@@ -61,24 +60,28 @@ import matplotlib.pyplot as plt
 
 fig=plt.figure()
 ax=fig.add_subplot(211)
-plt.plot(nus,xsv,label="direct",color="C0",alpha=0.3)
+plt.plot(nus,xsv,label="direct",color="green",alpha=0.3)
 plt.plot(nus,F0,label="DIT (0)",color="black",ls="dashed")
+plt.plot(nus,F0f,label="DIT (newfold)",color="red",ls="dashed")
 
-plt.plot(nus,xsvX,label="direct",color="C1",alpha=0.3)
-plt.plot(nus,F0X,label="DIT (0)",color="black",ls="dashed")
+plt.plot(nus,xsvX,color="green",alpha=0.3)
+plt.plot(nus,F0X,color="black",ls="dashed")
+plt.plot(nus,F0Xf,color="red",ls="dashed")
+plt.title("LOG DIT")
 
-#plt.plot(nus,F0fn,label="DIT (new fold)",ls="dotted")
-#plt.plot(nus,F0f1-xsv,label="DIT-direct")
 plt.yscale("log")
 plt.legend()
 
 ax=fig.add_subplot(212)
-plt.plot(nus,np.abs(F0/xsv-1),label="DIT-direct (0)",alpha=0.3,color="C0")
-plt.plot(nus,np.abs(F0X/xsvX-1),label="DIT-direct (0)",alpha=0.3,color="C1")
+plt.plot(nus,np.abs(F0/xsv-1),label="DIT-direct (0)",alpha=0.3,color="black")
+plt.plot(nus,np.abs(F0X/xsvX-1),alpha=0.3,color="black")
+plt.plot(nus,np.abs(F0f/xsv-1),label="DIT-direct (newfold)",alpha=0.3,color="red")
+plt.plot(nus,np.abs(F0Xf/xsvX-1),alpha=0.3,color="red")
 
 plt.ylim(1.e-4,100.0)
 plt.yscale("log")
 plt.legend()
+plt.savefig("newfold_log.png")
 plt.show()
 
 
