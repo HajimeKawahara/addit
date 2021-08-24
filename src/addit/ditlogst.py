@@ -45,12 +45,6 @@ def newfold_voigt_kernel_logst(k,log_nstbeta,log_ngammaL,vmax, pmarray):
     
     return valG*valL
 
-    
-    val=jnp.exp(-2.0*((jnp.pi*beta*k[:,None])**2 + jnp.pi*gammaL[None,:]*k[:,None]))
-    
-    
-    return val
-
 
 def folded_voigt_kernel_logst(k,log_nstbeta,log_ngammaL,dLarray):
     """Folded Fourier Kernel of the Voigt Profile for a common normalized beta.

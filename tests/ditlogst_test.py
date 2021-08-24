@@ -41,7 +41,6 @@ dLarray=make_dLarray(2,1.0)
 pmarray=np.ones(len(nus)+1)
 pmarray[1::2]=pmarray[1::2]*-1
 pmarray=jnp.array(pmarray)
-    
 Nfold=1
 
 
