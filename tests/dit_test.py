@@ -48,7 +48,7 @@ plt.plot(nus,F0_newf,label="DIT (new fold)",color="red",ls="dashed")
 
 plt.plot(nus,xsvX,color="green",alpha=1.0)
 plt.plot(nus,F0X,color="black",ls="dashed")
-plt.plot(nus,F0X_newf,color="red",ls="dashed")
+plt.plot(nus,F0X_newf,color="pink",ls="dashed")
 plt.title("LINEAR DIT")
 plt.yscale("log")
 plt.legend()
@@ -58,7 +58,7 @@ plt.plot(nus,np.abs(F0/xsv-1),label="DIT-direct (0)",alpha=0.3,color="black")
 plt.plot(nus,np.abs(F0X/xsvX-1),label="DIT-direct (0)",alpha=0.3,color="black")
 
 plt.plot(nus,np.abs(F0_newf/xsv-1),label="DIT-direct (newfold)",alpha=0.3,color="red")
-plt.plot(nus,np.abs(F0X_newf/xsvX-1),label="DIT-direct (newfold)",alpha=0.3,color="red")
+plt.plot(nus,np.abs(F0X_newf/xsvX-1),label="DIT-direct (newfold)",alpha=0.3,color="pink")
 
 
 
